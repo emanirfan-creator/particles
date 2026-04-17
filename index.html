@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Particles Playground</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #05060a;
+        color: #e8ecf3;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        overflow: hidden;
+      }
+      #stage {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+      }
+      #stage canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      #title {
+        position: fixed;
+        top: 16px;
+        left: 18px;
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0.55;
+        pointer-events: none;
+        user-select: none;
+        z-index: 10;
+      }
+      #hint {
+        position: fixed;
+        bottom: 14px;
+        left: 18px;
+        font-size: 12px;
+        opacity: 0.4;
+        pointer-events: none;
+        user-select: none;
+        z-index: 10;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="title">Particles · Playground</div>
+    <div id="stage"></div>
+    <div id="hint">move cursor to interact · drag to orbit in 3D</div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

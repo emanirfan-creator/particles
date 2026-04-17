@@ -1,0 +1,21 @@
+{
+  "name": "particles-playground",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "p5": "^1.9.4",
+    "three": "^0.162.0"
+  },
+  "devDependencies": {
+    "@types/p5": "^1.7.6",
+    "@types/three": "^0.162.0",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.8"
+  }
+}
