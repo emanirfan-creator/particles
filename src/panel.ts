@@ -888,11 +888,13 @@ function isVerticalEdge(e: Edge) {
   return e === 'left' || e === 'right';
 }
 
-function clampPos(panel: HTMLElement, edge: Edge, pos: number): number {
+function clampPos(_panel: HTMLElement, edge: Edge, pos: number): number {
   const margin = 16;
+  // Ensure the tab (52px) is always visible — clamp so the start of the panel
+  // is at least partially on-screen in both directions.
   const max = isVerticalEdge(edge)
-    ? Math.max(margin, window.innerHeight - panel.offsetHeight - margin)
-    : Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
+    ? window.innerHeight - 52 - margin
+    : window.innerWidth - 52 - margin;
   return Math.max(margin, Math.min(max, pos));
 }
 
