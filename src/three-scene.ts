@@ -258,7 +258,7 @@ export function createThreeScene(
   }
 
   function shapeOpts(state: ParticleState): ShapeOpts {
-    return { galaxyArms: state.galaxyArms, galaxySpiral: state.galaxySpiral };
+    return { galaxyArms: state.galaxyArms, galaxySpiral: state.galaxySpiral, scatter: state.scatter };
   }
 
   function rebuild(state: ParticleState) {
