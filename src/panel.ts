@@ -988,6 +988,12 @@ function setupDrag(panel: HTMLElement, tab: HTMLElement) {
     const pos = parseFloat(panel.style.getPropertyValue('--panel-pos')) || 80;
     savePanelPos(currentEdge, pos);
   });
+
+  // Re-clamp position when viewport resizes so panel can't get stuck off-screen.
+  window.addEventListener('resize', () => {
+    const pos = parseFloat(panel.style.getPropertyValue('--panel-pos')) || 80;
+    panel.style.setProperty('--panel-pos', `${clampPos(panel, currentEdge, pos)}px`);
+  });
 }
 
 /* -------------------- Open / close -------------------- */
