@@ -593,6 +593,7 @@ export const SHAPES_3D: Shape3D[] = [
   'wave',
   'grid',
   'cloud',
+  'figure',
   'text',
   'svg',
 ];
