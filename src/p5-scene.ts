@@ -1,5 +1,6 @@
 import p5 from 'p5';
 import { generate2D } from './shapes';
+import type { ShapeOpts } from './shapes';
 import { samplePalette, hexToRgb } from './palettes';
 import { flowAngle } from './noise';
 import type { ParticleState } from './state';
