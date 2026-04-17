@@ -900,46 +900,6 @@ function setOpen(panel: HTMLElement, open: boolean) {
   panel.dataset.open = open ? 'true' : 'false';
 }
 
-/* -------------------- SVG goo filter (injected once) -------------------- */
-
-function injectGooFilter() {
-  if (document.getElementById('goo-defs')) return;
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('id', 'goo-defs');
-  svg.setAttribute('aria-hidden', 'true');
-  Object.assign(svg.style, {
-    position: 'absolute',
-    width: '0',
-    height: '0',
-    overflow: 'hidden',
-  });
-  const filter = document.createElementNS(svgNS, 'filter');
-  filter.setAttribute('id', 'goo');
-  const blur = document.createElementNS(svgNS, 'feGaussianBlur');
-  blur.setAttribute('id', 'goo-blur');
-  blur.setAttribute('in', 'SourceGraphic');
-  blur.setAttribute('stdDeviation', '0');
-  blur.setAttribute('result', 'blur');
-  const cm = document.createElementNS(svgNS, 'feColorMatrix');
-  cm.setAttribute('in', 'blur');
-  cm.setAttribute('mode', 'matrix');
-  cm.setAttribute(
-    'values',
-    '1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10'
-  );
-  cm.setAttribute('result', 'goo');
-  const composite = document.createElementNS(svgNS, 'feComposite');
-  composite.setAttribute('in', 'SourceGraphic');
-  composite.setAttribute('in2', 'goo');
-  composite.setAttribute('operator', 'atop');
-  filter.appendChild(blur);
-  filter.appendChild(cm);
-  filter.appendChild(composite);
-  svg.appendChild(filter);
-  document.body.appendChild(svg);
-}
-
 /* -------------------- Helpers -------------------- */
 
 function prettyShapeName(s: ShapeId): string {
