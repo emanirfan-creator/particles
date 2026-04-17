@@ -143,6 +143,10 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
           { label: 'Ocean', value: 'ocean' },
           { label: 'Mono', value: 'mono' },
           { label: 'Rainbow shift', value: 'cycle' },
+          { label: 'Cosmic', value: 'cosmic' },
+          { label: 'Aurora', value: 'aurora' },
+          { label: 'Ember', value: 'ember' },
+          { label: 'Ice', value: 'ice' },
           { label: 'Custom (2 colors)', value: 'custom' },
         ],
         onChange: (v) => {
