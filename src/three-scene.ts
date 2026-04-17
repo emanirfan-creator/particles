@@ -343,7 +343,7 @@ export function createThreeScene(
       }
       if (key === 'count' || key === 'seed') {
         rebuild(state);
-      } else if (key === 'shape' || key === 'spread' || key === 'text' || key === 'svgData' || key === 'galaxyArms' || key === 'galaxySpiral') {
+      } else if (key === 'shape' || key === 'spread' || key === 'scatter' || key === 'text' || key === 'svgData' || key === 'galaxyArms' || key === 'galaxySpiral') {
         retargetSafe(state);
       } else if (
         key === 'palette' ||
