@@ -910,6 +910,7 @@ function prettyShapeName(s: ShapeId): string {
     heart: 'Heart',
     kaleidoscope: 'Kaleidoscope',
     text: 'Text…',
+    figure: 'Figure',
     svg: 'SVG Import…',
   };
   return map[s] || s;
