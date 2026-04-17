@@ -839,103 +839,65 @@ function buttonRow(buttons: ButtonOpts[]): HTMLElement {
   return wrap;
 }
 
-/* -------------------- Drag -------------------- */
+/* -------------------- Drag (vertical along edge) -------------------- */
 
-function setupDrag(panel: HTMLElement, handle: HTMLElement) {
-  // Restore last position.
+function setupDrag(panel: HTMLElement, tab: HTMLElement) {
+  // Restore last Y position.
   try {
     const saved = JSON.parse(localStorage.getItem('panel-pos') || 'null');
-    if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
-      applyTranslate(panel, saved.x, saved.y);
+    if (saved && typeof saved.y === 'number') {
+      panel.style.setProperty('--panel-top', `${saved.y}px`);
     }
   } catch {}
 
   let dragging = false;
-  let startX = 0;
   let startY = 0;
-  let baseX = 0;
   let baseY = 0;
+  let hasMoved = false;
 
-  handle.addEventListener('pointerdown', (e) => {
-    if ((e.target as HTMLElement).closest('button')) return;
+  tab.addEventListener('pointerdown', (e) => {
     dragging = true;
+    hasMoved = false;
     panel.dataset.dragging = 'true';
-    startX = e.clientX;
     startY = e.clientY;
-    baseX = numFromVar(panel, '--tx');
-    baseY = numFromVar(panel, '--ty');
-    handle.setPointerCapture(e.pointerId);
+    baseY = parseFloat(panel.style.getPropertyValue('--panel-top')) || 80;
+    tab.setPointerCapture(e.pointerId);
+    e.preventDefault();
   });
 
-  handle.addEventListener('pointermove', (e) => {
+  tab.addEventListener('pointermove', (e) => {
     if (!dragging) return;
-    const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    let nx = baseX + dx;
-    let ny = baseY + dy;
-    // Clamp so at least the header stays on-screen.
-    // panel.offsetLeft/Top represent its un-transformed CSS position.
-    const w = panel.offsetWidth;
-    const h = panel.offsetHeight;
-    const left = panel.offsetLeft;
-    const top = panel.offsetTop;
-    const margin = 8;
-    const minX = margin - (left + w - 80); // keep at least 80px visible from right edge of panel
-    const maxX = window.innerWidth - left - 80 - margin;
-    const minY = margin - top;
-    const maxY = window.innerHeight - top - 44 - margin;
-    nx = Math.max(minX, Math.min(maxX, nx));
-    ny = Math.max(minY, Math.min(maxY, ny));
-    applyTranslate(panel, nx, ny);
+    if (Math.abs(dy) > 5) hasMoved = true;
+    const minY = 16;
+    const maxY = Math.max(minY, window.innerHeight - panel.offsetHeight - 16);
+    const ny = Math.max(minY, Math.min(maxY, baseY + dy));
+    panel.style.setProperty('--panel-top', `${ny}px`);
   });
 
-  handle.addEventListener('pointerup', (e) => {
+  tab.addEventListener('pointerup', (e) => {
     if (!dragging) return;
     dragging = false;
     panel.dataset.dragging = 'false';
-    handle.releasePointerCapture(e.pointerId);
-    const x = numFromVar(panel, '--tx');
-    const y = numFromVar(panel, '--ty');
+    tab.releasePointerCapture(e.pointerId);
+
+    // Tap (no drag movement) → toggle open/close
+    if (!hasMoved) {
+      const isOpen = panel.dataset.open !== 'false';
+      setOpen(panel, !isOpen);
+    }
+
     try {
-      localStorage.setItem('panel-pos', JSON.stringify({ x, y }));
+      const y = parseFloat(panel.style.getPropertyValue('--panel-top')) || 80;
+      localStorage.setItem('panel-pos', JSON.stringify({ y }));
     } catch {}
   });
 }
 
-function applyTranslate(panel: HTMLElement, x: number, y: number) {
-  panel.style.setProperty('--tx', `${x}px`);
-  panel.style.setProperty('--ty', `${y}px`);
-}
+/* -------------------- Open / close -------------------- */
 
-function numFromVar(panel: HTMLElement, name: string): number {
-  const v = panel.style.getPropertyValue(name);
-  return parseFloat(v) || 0;
-}
-
-/* -------------------- Open / close jelly animation -------------------- */
-
-function setOpen(panel: HTMLElement, toggle: HTMLElement, open: boolean) {
-  const blur = document.getElementById('goo-blur') as SVGFEGaussianBlurElement | null;
-  // Drive a brief blur ramp on the SVG filter so the morph looks liquid.
-  const startStd = open ? 14 : 4;
-  const endStd = open ? 4 : 14;
-  if (blur) {
-    blur.setAttribute('stdDeviation', String(startStd));
-    let t0 = performance.now();
-    const dur = 460;
-    const tick = (now: number) => {
-      const k = Math.min(1, (now - t0) / dur);
-      const eased = 1 - Math.pow(1 - k, 3);
-      const v = startStd + (endStd - startStd) * eased;
-      blur.setAttribute('stdDeviation', String(v));
-      if (k < 1) requestAnimationFrame(tick);
-      else blur.setAttribute('stdDeviation', '4');
-    };
-    requestAnimationFrame(tick);
-  }
-
+function setOpen(panel: HTMLElement, open: boolean) {
   panel.dataset.open = open ? 'true' : 'false';
-  toggle.dataset.visible = open ? 'false' : 'true';
 }
 
 /* -------------------- SVG goo filter (injected once) -------------------- */
