@@ -310,6 +310,9 @@ export function createThreeScene(
       colors[i * 3 + 2] = c[2] / 255;
     }
     (geometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+    // Match connection line color to palette midpoint
+    const mid = samplePalette(state.palette, 0.5, A, B, frame);
+    lineMat.color.setRGB(mid[0] / 255, mid[1] / 255, mid[2] / 255);
   }
 
   function retargetSafe(state: ParticleState) {
