@@ -31,6 +31,10 @@ export type PaletteId =
   | 'ocean'
   | 'mono'
   | 'cycle'
+  | 'cosmic'
+  | 'aurora'
+  | 'ember'
+  | 'ice'
   | 'custom';
 
 export type GradientMode = 'position' | 'velocity' | 'solid';
