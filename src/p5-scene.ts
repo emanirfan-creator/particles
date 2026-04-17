@@ -1,11 +1,13 @@
 import p5 from 'p5';
 import { generate2D } from './shapes';
 import { samplePalette, hexToRgb } from './palettes';
+import { flowAngle } from './noise';
 import type { ParticleState } from './state';
 import type { Scene } from './three-scene';
 
 const STIFFNESS = 0.06;
 const DAMPING = 0.84;
+const CONNECTION_PARTICLE_CAP = 1500;
 
 export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene {
   let currentState: ParticleState = {
@@ -71,7 +73,12 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
 
       const repelR = s.cursor.radius;
       const repelR2 = repelR * repelR;
+      const useFlow = s.flowField;
+      const noiseScale = s.noiseScale;
+      const noiseSpeed = s.noiseSpeed;
+      const noiseStr = s.noiseStrength * 0.1;
 
+      p.noStroke();
       for (let i = 0; i < s.count; i++) {
         const ix = i * 2;
         let px = positions[ix];
@@ -99,6 +106,13 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
           }
         }
 
+        // Perlin flow field perturbation.
+        if (useFlow) {
+          const angle = flowAngle(px, py, frame, noiseScale, noiseSpeed);
+          vx += Math.cos(angle) * noiseStr;
+          vy += Math.sin(angle) * noiseStr;
+        }
+
         px += vx;
         py += vy;
 
@@ -112,6 +126,28 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
 
         drawMirrored(p, px, py, s.size, s.mirror);
       }
+
+      // Particle connections / network graph.
+      if (s.connections) {
+        const cap = Math.min(s.count, CONNECTION_PARTICLE_CAP);
+        const connR = s.connectionRadius;
+        const connR2 = connR * connR;
+        p.strokeWeight(0.8);
+        for (let i = 0; i < cap; i++) {
+          for (let j = i + 1; j < cap; j++) {
+            const dx = positions[i * 2] - positions[j * 2];
+            const dy = positions[i * 2 + 1] - positions[j * 2 + 1];
+            const d2 = dx * dx + dy * dy;
+            if (d2 < connR2) {
+              const alpha = (1 - Math.sqrt(d2) / connR) * s.connectionOpacity * 200;
+              p.stroke(200, 220, 255, alpha);
+              p.line(positions[i * 2], positions[i * 2 + 1], positions[j * 2], positions[j * 2 + 1]);
+            }
+          }
+        }
+        p.noStroke();
+      }
+
       p.pop();
     };
 
@@ -123,10 +159,14 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
 
   let instance = new p5(sketch, host);
 
+  function shapeText(s: ParticleState): string {
+    return s.shape === 'svg' ? s.svgData : s.text;
+  }
+
   function rebuild() {
     const s = currentState;
     const extent = Math.min(host.clientWidth, host.clientHeight);
-    const nextTargets = generate2D(s.shape, s.count, s.spread, s.seed, extent, s.text);
+    const nextTargets = generate2D(s.shape, s.count, s.spread, s.seed, extent, shapeText(s));
     targets = new Float32Array(nextTargets.length);
     targets.set(nextTargets);
     positions = new Float32Array(targets.length);

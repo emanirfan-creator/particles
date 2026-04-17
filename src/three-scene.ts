@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { generate3D } from './shapes';
 import { samplePalette, hexToRgb } from './palettes';
+import { flowAngle } from './noise';
 import type { ParticleState } from './state';
 
 export interface Scene {
@@ -89,6 +90,28 @@ export function createThreeScene(
   let points: THREE.Points | null = null;
   let currentState: ParticleState = { ...initial, cursor: { ...initial.cursor } };
 
+  // Connection line geometry — pre-allocated, drawn range updated each frame.
+  const CONNECTION_PARTICLE_CAP = 1500;
+  const MAX_LINES = 60000;
+  const linePosBuf = new Float32Array(MAX_LINES * 6);
+  const lineGeo = new THREE.BufferGeometry();
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePosBuf, 3));
+  lineGeo.setDrawRange(0, 0);
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0xaabbff,
+    transparent: true,
+    opacity: 0.3,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const lineSegments = new THREE.LineSegments(lineGeo, lineMat);
+  lineSegments.frustumCulled = false;
+  lineSegments.visible = false;
+  group.add(lineSegments);
+
+  // Flow field time counter (incremented each frame).
+  let noiseTime = 0;
+
   // Cursor plane intersection in world space.
   const mouseNDC = new THREE.Vector2(-10, -10);
   const raycaster = new THREE.Raycaster();
@@ -113,6 +136,7 @@ export function createThreeScene(
   let rafId = 0;
   function loop() {
     rafId = requestAnimationFrame(loop);
+    noiseTime++;
 
     if (cursorActive) {
       raycaster.setFromCamera(mouseNDC, camera);
@@ -125,6 +149,10 @@ export function createThreeScene(
     const repelR = currentState.cursor.radius;
     const repelR2 = repelR * repelR;
     const repelForce = currentState.cursor.repel * 0.6;
+    const useFlow = currentState.flowField;
+    const noiseScale = currentState.noiseScale;
+    const noiseSpeed = currentState.noiseSpeed;
+    const noiseStr = currentState.noiseStrength * 0.1;
 
     for (let i = 0; i < currentState.count; i++) {
       const ix = i * 3;
@@ -156,6 +184,13 @@ export function createThreeScene(
         }
       }
 
+      // Perlin flow field perturbation.
+      if (useFlow) {
+        const angle = flowAngle(px, py, noiseTime, noiseScale, noiseSpeed);
+        vx += Math.cos(angle) * noiseStr;
+        vy += Math.sin(angle) * noiseStr;
+      }
+
       px += vx;
       py += vy;
       pz += vz;
@@ -166,6 +201,38 @@ export function createThreeScene(
       velocities[ix] = vx;
       velocities[ix + 1] = vy;
       velocities[ix + 2] = vz;
+    }
+
+    // Connection lines — build line segment geometry from nearby particle pairs.
+    if (currentState.connections) {
+      lineMat.opacity = currentState.connectionOpacity;
+      lineSegments.visible = true;
+      const cap = Math.min(currentState.count, CONNECTION_PARTICLE_CAP);
+      const connR2 = currentState.connectionRadius * currentState.connectionRadius;
+      let lineCount = 0;
+      outer: for (let i = 0; i < cap; i++) {
+        for (let j = i + 1; j < cap; j++) {
+          const dx = positions[i * 3] - positions[j * 3];
+          const dy = positions[i * 3 + 1] - positions[j * 3 + 1];
+          const dz = positions[i * 3 + 2] - positions[j * 3 + 2];
+          if (dx * dx + dy * dy + dz * dz < connR2) {
+            if (lineCount >= MAX_LINES) break outer;
+            const li = lineCount * 6;
+            linePosBuf[li] = positions[i * 3];
+            linePosBuf[li + 1] = positions[i * 3 + 1];
+            linePosBuf[li + 2] = positions[i * 3 + 2];
+            linePosBuf[li + 3] = positions[j * 3];
+            linePosBuf[li + 4] = positions[j * 3 + 1];
+            linePosBuf[li + 5] = positions[j * 3 + 2];
+            lineCount++;
+          }
+        }
+      }
+      lineGeo.setDrawRange(0, lineCount * 2);
+      (lineGeo.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    } else {
+      lineSegments.visible = false;
+      lineGeo.setDrawRange(0, 0);
     }
 
     // Cycle palette needs per-frame color refresh.
@@ -185,9 +252,13 @@ export function createThreeScene(
   }
   loop();
 
+  function shapeText(state: ParticleState): string {
+    return state.shape === 'svg' ? state.svgData : state.text;
+  }
+
   function rebuild(state: ParticleState) {
     currentState = { ...state, cursor: { ...state.cursor } };
-    const nextTargets = generate3D(state.shape, state.count, state.spread, state.seed, state.text);
+    const nextTargets = generate3D(state.shape, state.count, state.spread, state.seed, shapeText(state));
     targets = new Float32Array(nextTargets.length);
     targets.set(nextTargets);
     positions = new Float32Array(targets.length);
@@ -238,7 +309,7 @@ export function createThreeScene(
 
   function retargetSafe(state: ParticleState) {
     currentState = { ...state, cursor: { ...state.cursor } };
-    const next = generate3D(state.shape, state.count, state.spread, state.seed, state.text);
+    const next = generate3D(state.shape, state.count, state.spread, state.seed, shapeText(state));
     if (next.length !== targets.length) {
       rebuild(state);
       return;
@@ -264,7 +335,7 @@ export function createThreeScene(
       }
       if (key === 'count' || key === 'seed') {
         rebuild(state);
-      } else if (key === 'shape' || key === 'spread' || key === 'text') {
+      } else if (key === 'shape' || key === 'spread' || key === 'text' || key === 'svgData') {
         retargetSafe(state);
       } else if (
         key === 'palette' ||
@@ -283,6 +354,8 @@ export function createThreeScene(
       orbit.dispose();
       geometry.dispose();
       material.dispose();
+      lineGeo.dispose();
+      lineMat.dispose();
       renderer.dispose();
       if (renderer.domElement.parentElement === host) {
         host.removeChild(renderer.domElement);

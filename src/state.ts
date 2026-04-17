@@ -9,7 +9,8 @@ export type Shape3D =
   | 'wave'
   | 'grid'
   | 'cloud'
-  | 'text';
+  | 'text'
+  | 'svg';
 
 export type Shape2D =
   | 'circle'
@@ -18,7 +19,8 @@ export type Shape2D =
   | 'wave'
   | 'cloud'
   | 'kaleidoscope'
-  | 'text';
+  | 'text'
+  | 'svg';
 
 export type ShapeId = Shape3D | Shape2D;
 
@@ -39,6 +41,7 @@ export type ParticleState = {
   spread: number;
   shape: ShapeId;
   text: string;
+  svgData: string;
   palette: PaletteId;
   gradientMode: GradientMode;
   colorA: string;
@@ -48,6 +51,15 @@ export type ParticleState = {
   mirror: 0 | 2 | 4;
   cursor: { repel: number; radius: number };
   seed: number;
+  // Flow field (Perlin noise)
+  flowField: boolean;
+  noiseScale: number;
+  noiseSpeed: number;
+  noiseStrength: number;
+  // Particle connections / network graph
+  connections: boolean;
+  connectionRadius: number;
+  connectionOpacity: number;
 };
 
 export const DEFAULT_STATE: ParticleState = {
@@ -57,6 +69,7 @@ export const DEFAULT_STATE: ParticleState = {
   spread: 1,
   shape: 'sphere',
   text: 'HELLO',
+  svgData: '',
   palette: 'plasma',
   gradientMode: 'position',
   colorA: '#7c3aed',
@@ -66,6 +79,13 @@ export const DEFAULT_STATE: ParticleState = {
   mirror: 0,
   cursor: { repel: 2, radius: 80 },
   seed: 1,
+  flowField: false,
+  noiseScale: 0.004,
+  noiseSpeed: 0.005,
+  noiseStrength: 1.5,
+  connections: false,
+  connectionRadius: 80,
+  connectionOpacity: 0.3,
 };
 
 const LISTENERS = new Set<(s: ParticleState, key: keyof ParticleState) => void>();

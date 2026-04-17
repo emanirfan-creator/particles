@@ -162,6 +162,16 @@ export function generate3D(
       }
       break;
     }
+    case 'svg': {
+      const pixels = sampleSVGPoints(text, count, seed, R * 3);
+      const jitterDepth = R * 0.04;
+      for (let i = 0; i < count; i++) {
+        out[i * 3] = pixels[i * 2];
+        out[i * 3 + 1] = pixels[i * 2 + 1];
+        out[i * 3 + 2] = (rand() - 0.5) * jitterDepth;
+      }
+      break;
+    }
     case 'cloud':
     default: {
       for (let i = 0; i < count; i++) {
@@ -251,6 +261,16 @@ export function generate2D(
       const targetWidth = Math.min(extent * 0.85, R * 3);
       const pixels = sampleTextPixels(text || 'HELLO', count, seed, targetWidth);
       // sampleTextPixels flips Y for world (+y up). In p5 +y is down, so flip back.
+      for (let i = 0; i < count; i++) {
+        out[i * 2] = pixels[i * 2];
+        out[i * 2 + 1] = -pixels[i * 2 + 1];
+      }
+      break;
+    }
+    case 'svg': {
+      const targetWidth = Math.min(extent * 0.85, R * 3);
+      const pixels = sampleSVGPoints(text, count, seed, targetWidth);
+      // sampleSVGPoints returns Y-up coords; flip back for p5 (y-down).
       for (let i = 0; i < count; i++) {
         out[i * 2] = pixels[i * 2];
         out[i * 2 + 1] = -pixels[i * 2 + 1];
@@ -357,6 +377,151 @@ export function sampleTextPixels(
   return out;
 }
 
+/**
+ * Parse an SVG string, sample `count` points along all path/shape elements,
+ * and return them as Float32Array[count*2] (XY) centered at origin and scaled
+ * so the bounding box fits within `targetR` radius. Y is flipped to world-up.
+ *
+ * Falls back to a small cloud if the SVG is empty or unreadable.
+ */
+export function sampleSVGPoints(
+  svgString: string,
+  count: number,
+  seed: number,
+  targetR: number
+): Float32Array {
+  const out = new Float32Array(count * 2);
+  const rand = mulberry32(seed);
+
+  if (!svgString || !svgString.trim()) {
+    // Fallback: random cloud
+    for (let i = 0; i < count; i++) {
+      out[i * 2] = gauss(rand) * targetR * 0.3;
+      out[i * 2 + 1] = gauss(rand) * targetR * 0.3;
+    }
+    return out;
+  }
+
+  // Parse the SVG XML string.
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgString, 'image/svg+xml');
+  const parseError = doc.querySelector('parsererror');
+  const svgEl = doc.querySelector('svg');
+  if (parseError || !svgEl) {
+    for (let i = 0; i < count; i++) {
+      out[i * 2] = gauss(rand) * targetR * 0.3;
+      out[i * 2 + 1] = gauss(rand) * targetR * 0.3;
+    }
+    return out;
+  }
+
+  // Mount the SVG content into a hidden element in the live document so that
+  // getTotalLength() / getPointAtLength() work (they require layout).
+  const container = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  container.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  Object.assign(container.style, {
+    position: 'absolute',
+    left: '-99999px',
+    top: '-99999px',
+    width: '1px',
+    height: '1px',
+    overflow: 'hidden',
+    visibility: 'hidden',
+  });
+  // Import all children of the parsed SVG into the live document.
+  for (const child of Array.from(svgEl.childNodes)) {
+    container.appendChild(document.importNode(child, true));
+  }
+  document.body.appendChild(container);
+
+  const SELECTORS = 'path, circle, ellipse, rect, line, polyline, polygon';
+  const elements = Array.from(container.querySelectorAll(SELECTORS));
+
+  type PathEntry = { el: SVGGeometryElement; len: number };
+  const paths: PathEntry[] = [];
+  for (const el of elements) {
+    if (el instanceof SVGGeometryElement) {
+      try {
+        const len = el.getTotalLength();
+        if (len > 0) paths.push({ el, len });
+      } catch {
+        // element doesn't support getTotalLength — skip
+      }
+    }
+  }
+
+  if (paths.length === 0) {
+    document.body.removeChild(container);
+    for (let i = 0; i < count; i++) {
+      out[i * 2] = gauss(rand) * targetR * 0.3;
+      out[i * 2 + 1] = gauss(rand) * targetR * 0.3;
+    }
+    return out;
+  }
+
+  const totalLen = paths.reduce((s, p) => s + p.len, 0);
+
+  // Sample points proportionally across all paths by arc length.
+  const rawX: number[] = [];
+  const rawY: number[] = [];
+  for (let i = 0; i < count; i++) {
+    let pick = rand() * totalLen;
+    let placed = false;
+    for (const { el, len } of paths) {
+      if (pick <= len) {
+        try {
+          const pt = el.getPointAtLength(pick);
+          rawX.push(pt.x);
+          rawY.push(pt.y);
+          placed = true;
+        } catch {
+          rawX.push(0);
+          rawY.push(0);
+          placed = true;
+        }
+        break;
+      }
+      pick -= len;
+    }
+    if (!placed) {
+      // Floating-point edge case — use start of first path.
+      try {
+        const pt = paths[0].el.getPointAtLength(0);
+        rawX.push(pt.x);
+        rawY.push(pt.y);
+      } catch {
+        rawX.push(0);
+        rawY.push(0);
+      }
+    }
+  }
+
+  document.body.removeChild(container);
+
+  // Compute bounding box, center, and scale to fit targetR.
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < count; i++) {
+    if (rawX[i] < minX) minX = rawX[i];
+    if (rawX[i] > maxX) maxX = rawX[i];
+    if (rawY[i] < minY) minY = rawY[i];
+    if (rawY[i] > maxY) maxY = rawY[i];
+  }
+
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  const span = Math.max(maxX - minX, maxY - minY, 1);
+  // targetR is the half-width; multiply by 2 to fill the diameter.
+  const scale = (targetR * 2) / span;
+
+  for (let i = 0; i < count; i++) {
+    out[i * 2] = (rawX[i] - cx) * scale;
+    // Flip Y: SVG y-axis is down, world y-axis is up.
+    out[i * 2 + 1] = -(rawY[i] - cy) * scale;
+  }
+
+  return out;
+}
+
 export const SHAPES_3D: Shape3D[] = [
   'sphere',
   'cube',
@@ -367,6 +532,7 @@ export const SHAPES_3D: Shape3D[] = [
   'grid',
   'cloud',
   'text',
+  'svg',
 ];
 
 export const SHAPES_2D: Shape2D[] = [
@@ -377,6 +543,7 @@ export const SHAPES_2D: Shape2D[] = [
   'cloud',
   'kaleidoscope',
   'text',
+  'svg',
 ];
 
 export function shapesForMode(mode: '2d' | '3d'): ShapeId[] {
