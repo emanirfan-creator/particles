@@ -314,7 +314,7 @@ export function createThreeScene(
 
   function retargetSafe(state: ParticleState) {
     currentState = { ...state, cursor: { ...state.cursor } };
-    const next = generate3D(state.shape, state.count, state.spread, state.seed, shapeText(state));
+    const next = generate3D(state.shape, state.count, state.spread, state.seed, shapeText(state), shapeOpts(state));
     if (next.length !== targets.length) {
       rebuild(state);
       return;
