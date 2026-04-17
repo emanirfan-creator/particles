@@ -101,7 +101,7 @@
 #panel[data-edge='top'] {
   top: 0;
   left: var(--panel-pos, 80px);
-  flex-direction: column;
+  flex-direction: column-reverse;
   width: 320px;
   max-height: calc(100vh - 80px);
   border-radius: 0 0 24px 24px;
