@@ -1,6 +1,11 @@
 import { mulberry32 } from './state';
 import type { Shape2D, Shape3D, ShapeId } from './state';
 
+export interface ShapeOpts {
+  galaxyArms?: number;
+  galaxySpiral?: number;
+}
+
 /**
  * Generate target positions for `count` particles forming `shape`.
  * Returns a Float32Array of length count*3 (z = 0 for inherently 2D shapes).
@@ -11,7 +16,8 @@ export function generate3D(
   count: number,
   scale: number,
   seed: number,
-  text = ''
+  text = '',
+  opts: ShapeOpts = {}
 ): Float32Array {
   const out = new Float32Array(count * 3);
   const rand = mulberry32(seed);
