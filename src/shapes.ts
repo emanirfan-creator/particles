@@ -172,6 +172,68 @@ export function generate3D(
       }
       break;
     }
+    case 'figure': {
+      // Humanoid silhouette: head, torso, arms, hips, legs
+      const headN  = Math.floor(count * 0.12);
+      const torsoN = Math.floor(count * 0.28);
+      const armsN  = Math.floor(count * 0.20);
+      const hipsN  = Math.floor(count * 0.12);
+      const legsN  = count - headN - torsoN - armsN - hipsN;
+      let idx = 0;
+
+      // Head — sphere cluster at top
+      const headY = R * 0.82;
+      const headR = R * 0.17;
+      for (let i = 0; i < headN; i++) {
+        const r = headR * Math.cbrt(rand());
+        const phi = Math.acos(2 * rand() - 1);
+        const theta = rand() * Math.PI * 2;
+        out[idx * 3]     = Math.sin(phi) * Math.cos(theta) * r;
+        out[idx * 3 + 1] = headY + Math.cos(phi) * r;
+        out[idx * 3 + 2] = Math.sin(phi) * Math.sin(theta) * r * 0.55;
+        idx++;
+      }
+
+      // Torso — tapered vertical ellipsoid
+      for (let i = 0; i < torsoN; i++) {
+        const t = rand();
+        const y = (t - 0.35) * R * 0.80;
+        const xr = R * 0.21 * (1 - Math.abs(y / R) * 0.35);
+        out[idx * 3]     = (rand() * 2 - 1) * xr;
+        out[idx * 3 + 1] = y;
+        out[idx * 3 + 2] = (rand() * 2 - 1) * xr * 0.45;
+        idx++;
+      }
+
+      // Arms — two diagonal segments from shoulders
+      for (let i = 0; i < armsN; i++) {
+        const side = i < armsN / 2 ? 1 : -1;
+        const t = rand();
+        out[idx * 3]     = side * (R * 0.21 + t * R * 0.52);
+        out[idx * 3 + 1] = R * 0.42 - t * R * 0.48 + (rand() - 0.5) * R * 0.07;
+        out[idx * 3 + 2] = (rand() - 0.5) * R * 0.10;
+        idx++;
+      }
+
+      // Hips — wider short section below torso
+      for (let i = 0; i < hipsN; i++) {
+        out[idx * 3]     = (rand() * 2 - 1) * R * 0.27;
+        out[idx * 3 + 1] = (rand() - 0.75) * R * 0.28;
+        out[idx * 3 + 2] = (rand() * 2 - 1) * R * 0.13;
+        idx++;
+      }
+
+      // Legs — two downward segments
+      for (let i = 0; i < legsN; i++) {
+        const side = i < legsN / 2 ? 1 : -1;
+        const t = rand();
+        out[idx * 3]     = side * R * 0.15 + (rand() - 0.5) * R * 0.10;
+        out[idx * 3 + 1] = -R * 0.14 - t * R * 0.82 + (rand() - 0.5) * R * 0.05;
+        out[idx * 3 + 2] = (rand() - 0.5) * R * 0.09;
+        idx++;
+      }
+      break;
+    }
     case 'cloud':
     default: {
       for (let i = 0; i < count; i++) {
