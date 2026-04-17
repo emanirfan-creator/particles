@@ -77,16 +77,33 @@ export function generate3D(
       break;
     }
     case 'galaxy': {
-      const arms = 4;
+      const arms = Math.max(1, Math.round(opts.galaxyArms ?? 4));
+      const spiral = opts.galaxySpiral ?? 6;
       for (let i = 0; i < count; i++) {
         const t = Math.pow(rand(), 0.6);
         const arm = Math.floor(rand() * arms);
-        const a = (arm / arms) * Math.PI * 2 + t * 6;
+        const a = (arm / arms) * Math.PI * 2 + t * spiral;
         const radius = t * R * 1.2;
         const jitter = (rand() - 0.5) * R * 0.2 * (1 - t);
-        out[i * 3] = Math.cos(a) * radius + jitter;
+        out[i * 3]     = Math.cos(a) * radius + jitter;
         out[i * 3 + 1] = (rand() - 0.5) * R * 0.1 * (1 - t);
         out[i * 3 + 2] = Math.sin(a) * radius + jitter;
+      }
+      break;
+    }
+    case 'aurora': {
+      const BANDS = 5;
+      for (let i = 0; i < count; i++) {
+        const x = (rand() * 2 - 1) * R * 1.7;
+        const band = Math.floor(rand() * BANDS);
+        const bandY = ((band / (BANDS - 1)) - 0.5) * R * 0.65;
+        // Each band ripples in Z with a unique phase
+        const phase = (band / BANDS) * Math.PI * 2;
+        const z = Math.sin(x * 0.028 + phase) * R * 0.38
+                + Math.cos(x * 0.018 + phase * 0.5) * R * 0.18;
+        out[i * 3]     = x + (rand() - 0.5) * R * 0.04;
+        out[i * 3 + 1] = bandY + (rand() - 0.5) * R * 0.09;
+        out[i * 3 + 2] = z + (rand() - 0.5) * R * 0.06;
       }
       break;
     }
