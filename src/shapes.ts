@@ -4,6 +4,7 @@ import type { Shape2D, Shape3D, ShapeId } from './state';
 export interface ShapeOpts {
   galaxyArms?: number;
   galaxySpiral?: number;
+  scatter?: number;
 }
 
 /**
