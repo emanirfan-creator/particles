@@ -175,6 +175,10 @@
     rgba(255, 255, 255, 0.04) 100%
   );
 }
+#panel[data-edge='top'] .panel-tab {
+  border-bottom: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
 #panel[data-edge='bottom'] .panel-tab {
   border-bottom: none;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
