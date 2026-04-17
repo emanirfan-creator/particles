@@ -6,10 +6,10 @@ export type Shape3D =
   | 'torus'
   | 'helix'
   | 'galaxy'
+  | 'aurora'
   | 'wave'
   | 'grid'
   | 'cloud'
-  | 'figure'
   | 'text'
   | 'svg';
 
