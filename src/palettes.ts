@@ -19,6 +19,14 @@ export function samplePalette(
       return lerpStops(t, OCEAN);
     case 'mono':
       return lerpStops(t, MONO);
+    case 'cosmic':
+      return lerpStops(t, COSMIC);
+    case 'aurora':
+      return lerpStops(t, AURORA);
+    case 'ember':
+      return lerpStops(t, EMBER);
+    case 'ice':
+      return lerpStops(t, ICE);
     case 'cycle':
       return [
         Math.sin(frame * 0.02) * 60 + 180,
