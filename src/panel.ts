@@ -912,7 +912,6 @@ function clampPos(_panel: HTMLElement, edge: Edge, pos: number): number {
 
 function applyEdge(panel: HTMLElement, edge: Edge, pos: number) {
   panel.dataset.edge = edge;
-  panel.dataset.dragging = 'false';
   panel.style.setProperty('--panel-pos', `${pos}px`);
 }
 
