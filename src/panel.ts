@@ -1090,6 +1090,7 @@ function importAndApply(
         'connections',
         'connectionRadius',
         'connectionOpacity',
+        'scatter',
       ] as (keyof ParticleState)[]
     ).forEach((k) => {
       notifyChange(state, k);
