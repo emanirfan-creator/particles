@@ -50,7 +50,17 @@
 }
 
 #panel[data-dragging='true'] {
-  transition: none;
+  transition: none !important;
+  top: var(--drag-top, 80px) !important;
+  left: var(--drag-left, 0px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  cursor: grabbing;
+}
+
+#panel[data-dragging='true'] .panel-tab {
+  cursor: grabbing;
 }
 
 /* ===================== EDGE VARIANTS ===================== */
