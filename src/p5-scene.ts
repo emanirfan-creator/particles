@@ -166,7 +166,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
   }
 
   function shapeOpts(s: ParticleState): ShapeOpts {
-    return { galaxyArms: s.galaxyArms, galaxySpiral: s.galaxySpiral };
+    return { galaxyArms: s.galaxyArms, galaxySpiral: s.galaxySpiral, scatter: s.scatter };
   }
 
   function rebuild() {
