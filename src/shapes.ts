@@ -215,7 +215,8 @@ export function generate2D(
   scale: number,
   seed: number,
   extent: number,
-  text = ''
+  text = '',
+  opts: ShapeOpts = {}
 ): Float32Array {
   const out = new Float32Array(count * 2);
   const rand = mulberry32(seed);
