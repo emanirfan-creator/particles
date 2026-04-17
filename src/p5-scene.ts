@@ -142,7 +142,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
             const d2 = dx * dx + dy * dy;
             if (d2 < connR2) {
               const alpha = (1 - Math.sqrt(d2) / connR) * s.connectionOpacity * 200;
-              p.stroke(200, 220, 255, alpha);
+              p.stroke(lineColor[0], lineColor[1], lineColor[2], alpha);
               p.line(positions[i * 2], positions[i * 2 + 1], positions[j * 2], positions[j * 2 + 1]);
             }
           }
