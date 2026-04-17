@@ -91,6 +91,8 @@ export const DEFAULT_STATE: ParticleState = {
   noiseScale: 0.004,
   noiseSpeed: 0.005,
   noiseStrength: 1.5,
+  galaxyArms: 4,
+  galaxySpiral: 6,
   connections: false,
   connectionRadius: 80,
   connectionOpacity: 0.3,
