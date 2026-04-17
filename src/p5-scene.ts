@@ -20,6 +20,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
   let velocities = new Float32Array(0);
   let targets = new Float32Array(0);
   let colors: [number, number, number][] = [];
+  let lineColor: [number, number, number] = [200, 220, 255];
   let frame = 0;
 
   const sketch = (p: p5) => {
