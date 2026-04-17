@@ -175,14 +175,12 @@
     rgba(255, 255, 255, 0.04) 100%
   );
 }
+/* top edge: tab is at visual bottom, so border separates content above from tab below */
 #panel[data-edge='top'] .panel-tab {
   border-bottom: none;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
-#panel[data-edge='bottom'] .panel-tab {
-  border-bottom: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
+/* bottom edge: tab is at visual top (column), default border-bottom from shared rule is correct */
 
 .panel-tab::after {
   content: '';
