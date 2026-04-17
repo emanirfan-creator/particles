@@ -165,10 +165,14 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
     return s.shape === 'svg' ? s.svgData : s.text;
   }
 
+  function shapeOpts(s: ParticleState): ShapeOpts {
+    return { galaxyArms: s.galaxyArms, galaxySpiral: s.galaxySpiral };
+  }
+
   function rebuild() {
     const s = currentState;
     const extent = Math.min(host.clientWidth, host.clientHeight);
-    const nextTargets = generate2D(s.shape, s.count, s.spread, s.seed, extent, shapeText(s));
+    const nextTargets = generate2D(s.shape, s.count, s.spread, s.seed, extent, shapeText(s), shapeOpts(s));
     targets = new Float32Array(nextTargets.length);
     targets.set(nextTargets);
     positions = new Float32Array(targets.length);
