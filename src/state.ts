@@ -9,6 +9,7 @@ export type Shape3D =
   | 'wave'
   | 'grid'
   | 'cloud'
+  | 'figure'
   | 'text'
   | 'svg';
 
