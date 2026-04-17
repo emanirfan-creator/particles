@@ -208,6 +208,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
           : 0;
       colors[i] = samplePalette(s.palette, t, A, B, frame);
     }
+    lineColor = samplePalette(s.palette, 0.5, A, B, frame);
   }
 
   return {
