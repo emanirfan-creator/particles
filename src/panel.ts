@@ -128,6 +128,18 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
           emit('spread');
         },
       }),
+      slider({
+        label: 'Scatter',
+        tooltip: 'Extra random displacement around each particle\'s shape target — loosen tight shapes like sphere or heart',
+        value: state.scatter,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: (v) => {
+          state.scatter = v;
+          emit('scatter');
+        },
+      }),
       conditionalGalaxyControls(state, emit, refreshHooks),
     ])
   );
