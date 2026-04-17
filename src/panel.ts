@@ -833,40 +833,96 @@ function buttonRow(buttons: ButtonOpts[]): HTMLElement {
   return wrap;
 }
 
-/* -------------------- Drag (vertical along edge) -------------------- */
+/* -------------------- Drag (4-edge docking) -------------------- */
 
-function setupDrag(panel: HTMLElement, tab: HTMLElement) {
-  // Restore last Y position.
+type Edge = 'left' | 'right' | 'top' | 'bottom';
+
+function isVerticalEdge(e: Edge) {
+  return e === 'left' || e === 'right';
+}
+
+function clampPos(panel: HTMLElement, edge: Edge, pos: number): number {
+  const margin = 16;
+  const max = isVerticalEdge(edge)
+    ? Math.max(margin, window.innerHeight - panel.offsetHeight - margin)
+    : Math.max(margin, window.innerWidth - panel.offsetWidth - margin);
+  return Math.max(margin, Math.min(max, pos));
+}
+
+function applyEdge(panel: HTMLElement, edge: Edge, pos: number) {
+  panel.dataset.edge = edge;
+  panel.dataset.dragging = 'false';
+  panel.style.setProperty('--panel-pos', `${pos}px`);
+}
+
+function loadPanelPos(): { edge: Edge; pos: number } {
   try {
-    const saved = JSON.parse(localStorage.getItem('panel-pos') || 'null');
-    if (saved && typeof saved.y === 'number') {
-      panel.style.setProperty('--panel-top', `${saved.y}px`);
+    const s = JSON.parse(localStorage.getItem('panel-pos2') || 'null');
+    if (s && (s.edge === 'left' || s.edge === 'right' || s.edge === 'top' || s.edge === 'bottom') && typeof s.pos === 'number') {
+      return s;
     }
   } catch {}
+  return { edge: 'right', pos: 80 };
+}
+
+function savePanelPos(edge: Edge, pos: number) {
+  try { localStorage.setItem('panel-pos2', JSON.stringify({ edge, pos })); } catch {}
+}
+
+function setupDrag(panel: HTMLElement, tab: HTMLElement) {
+  const SNAP_ZONE = 64;
+
+  const saved = loadPanelPos();
+  applyEdge(panel, saved.edge, saved.pos);
 
   let dragging = false;
-  let startY = 0;
-  let baseY = 0;
   let hasMoved = false;
+  let startX = 0;
+  let startY = 0;
+  let basePos = 0;
+  let currentEdge: Edge = saved.edge;
 
   tab.addEventListener('pointerdown', (e) => {
     dragging = true;
     hasMoved = false;
-    panel.dataset.dragging = 'true';
+    startX = e.clientX;
     startY = e.clientY;
-    baseY = parseFloat(panel.style.getPropertyValue('--panel-top')) || 80;
+    basePos = parseFloat(panel.style.getPropertyValue('--panel-pos')) || 80;
+    panel.dataset.dragging = 'true';
     tab.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
 
   tab.addEventListener('pointermove', (e) => {
     if (!dragging) return;
+    const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    if (Math.abs(dy) > 5) hasMoved = true;
-    const minY = 16;
-    const maxY = Math.max(minY, window.innerHeight - panel.offsetHeight - 16);
-    const ny = Math.max(minY, Math.min(maxY, baseY + dy));
-    panel.style.setProperty('--panel-top', `${ny}px`);
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
+
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    // Detect snap to a new edge based on pointer proximity to viewport edges
+    let newEdge: Edge = currentEdge;
+    if (e.clientX < SNAP_ZONE) newEdge = 'left';
+    else if (e.clientX > W - SNAP_ZONE) newEdge = 'right';
+    else if (e.clientY < SNAP_ZONE) newEdge = 'top';
+    else if (e.clientY > H - SNAP_ZONE) newEdge = 'bottom';
+
+    if (newEdge !== currentEdge) {
+      currentEdge = newEdge;
+      const newPos = isVerticalEdge(currentEdge) ? e.clientY : e.clientX;
+      basePos = newPos;
+      startX = e.clientX;
+      startY = e.clientY;
+      applyEdge(panel, currentEdge, clampPos(panel, currentEdge, newPos));
+      return;
+    }
+
+    // Slide along current edge
+    const delta = isVerticalEdge(currentEdge) ? dy : dx;
+    const newPos = clampPos(panel, currentEdge, basePos + delta);
+    panel.style.setProperty('--panel-pos', `${newPos}px`);
   });
 
   tab.addEventListener('pointerup', (e) => {
@@ -875,16 +931,13 @@ function setupDrag(panel: HTMLElement, tab: HTMLElement) {
     panel.dataset.dragging = 'false';
     tab.releasePointerCapture(e.pointerId);
 
-    // Tap (no drag movement) → toggle open/close
     if (!hasMoved) {
       const isOpen = panel.dataset.open !== 'false';
       setOpen(panel, !isOpen);
     }
 
-    try {
-      const y = parseFloat(panel.style.getPropertyValue('--panel-top')) || 80;
-      localStorage.setItem('panel-pos', JSON.stringify({ y }));
-    } catch {}
+    const pos = parseFloat(panel.style.getPropertyValue('--panel-pos')) || 80;
+    savePanelPos(currentEdge, pos);
   });
 }
 
