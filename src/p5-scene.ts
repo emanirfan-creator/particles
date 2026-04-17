@@ -185,7 +185,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
   function retarget() {
     const s = currentState;
     const extent = Math.min(host.clientWidth, host.clientHeight);
-    const next = generate2D(s.shape, s.count, s.spread, s.seed, extent, shapeText(s));
+    const next = generate2D(s.shape, s.count, s.spread, s.seed, extent, shapeText(s), shapeOpts(s));
     if (next.length !== targets.length) {
       rebuild();
       return;
