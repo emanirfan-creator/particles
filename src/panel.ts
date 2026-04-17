@@ -604,6 +604,52 @@ function conditionalFlowField(
   return wrap;
 }
 
+function conditionalGalaxyControls(
+  state: ParticleState,
+  emit: (k: keyof ParticleState) => void,
+  refreshHooks: Array<() => void>
+): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  wrap.style.gap = '10px';
+  const render = () => {
+    wrap.innerHTML = '';
+    if (state.shape !== 'galaxy') return;
+    wrap.appendChild(
+      slider({
+        label: 'Arms',
+        tooltip: 'Number of spiral arms',
+        value: state.galaxyArms,
+        min: 1,
+        max: 8,
+        step: 1,
+        onChange: (v) => {
+          state.galaxyArms = v;
+          emit('galaxyArms');
+        },
+      })
+    );
+    wrap.appendChild(
+      slider({
+        label: 'Spiral tightness',
+        tooltip: 'How tightly the arms wind inward',
+        value: state.galaxySpiral,
+        min: 1,
+        max: 12,
+        step: 0.5,
+        onChange: (v) => {
+          state.galaxySpiral = v;
+          emit('galaxySpiral');
+        },
+      })
+    );
+  };
+  render();
+  refreshHooks.push(render);
+  return wrap;
+}
+
 function conditionalConnections(
   state: ParticleState,
   emit: (k: keyof ParticleState) => void,
