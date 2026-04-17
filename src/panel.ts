@@ -128,6 +128,7 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
           emit('spread');
         },
       }),
+      conditionalGalaxyControls(state, emit, refreshHooks),
     ])
   );
 
