@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { generate3D } from './shapes';
+import type { ShapeOpts } from './shapes';
 import { samplePalette, hexToRgb } from './palettes';
 import { flowAngle } from './noise';
 import type { ParticleState } from './state';
