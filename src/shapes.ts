@@ -335,6 +335,16 @@ export function generate2D(
       break;
     }
   }
+
+  // Apply extra scatter: displace each particle by a gaussian amount proportional to R.
+  const scatterAmt2D = (opts.scatter ?? 0) * R;
+  if (scatterAmt2D > 0) {
+    for (let i = 0; i < count; i++) {
+      out[i * 2]     += gauss(rand) * scatterAmt2D;
+      out[i * 2 + 1] += gauss(rand) * scatterAmt2D;
+    }
+  }
+
   return out;
 }
 
