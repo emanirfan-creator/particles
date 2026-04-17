@@ -61,6 +61,9 @@ export type ParticleState = {
   noiseScale: number;
   noiseSpeed: number;
   noiseStrength: number;
+  // Galaxy shape parameters
+  galaxyArms: number;
+  galaxySpiral: number;
   // Particle connections / network graph
   connections: boolean;
   connectionRadius: number;
