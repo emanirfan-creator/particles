@@ -220,7 +220,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
       currentState = { ...state, cursor: { ...state.cursor } };
       if (key === 'resetView') return;
       if (key === 'count' || key === 'seed') rebuild();
-      else if (key === 'shape' || key === 'spread' || key === 'text' || key === 'svgData') retarget();
+      else if (key === 'shape' || key === 'spread' || key === 'text' || key === 'svgData' || key === 'galaxyArms' || key === 'galaxySpiral') retarget();
       else if (
         key === 'palette' ||
         key === 'gradientMode' ||
