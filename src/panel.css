@@ -1,44 +1,39 @@
-/* ---- Goo wrapper: applies SVG filter so child morph looks liquid ---- */
+/* ---- Goo wrapper (kept for potential use) ---- */
 .goo {
   filter: url(#goo);
   -webkit-filter: url(#goo);
 }
 
-/* ---- Floating panel ---- */
+/* ---- Panel: magnetic blob attached to the right edge ---- */
 #panel {
   position: fixed;
-  top: 16px;
-  right: 16px;
-  width: 300px;
-  max-height: calc(100vh - 32px);
-  background: rgba(8, 10, 16, 0.38);
+  right: 0;
+  top: var(--panel-top, 80px);
+  width: 320px;
+  max-height: calc(100vh - 120px);
+  background: rgba(8, 10, 16, 0.52);
   color: #e8ecf3;
-  border: 1px solid transparent;
-  border-radius: 20px;
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.65),
-    0 8px 24px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  border-radius: 24px 0 0 24px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   z-index: 100;
   user-select: none;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
-  transform-origin: top right;
-  transform: translate(var(--tx, 0px), var(--ty, 0px)) scale(var(--scale, 1));
-  opacity: var(--opacity, 1);
-  transition:
-    transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 380ms ease;
-  will-change: transform, opacity;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  box-shadow:
+    -12px 0 48px rgba(0, 0, 0, 0.55),
+    -3px 0 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transform: translateX(var(--slide, 0%));
+  transition: transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
 }
 
-/* Gradient border ring — bright at top-left fading to invisible, simulating glass edge refraction */
+/* Glass edge highlight on the exposed (left) side */
 #panel::before {
   content: '';
   position: absolute;
@@ -46,11 +41,11 @@
   border-radius: inherit;
   padding: 1px;
   background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.35) 0%,
-    rgba(255, 255, 255, 0.12) 25%,
-    rgba(255, 255, 255, 0.04) 55%,
-    rgba(255, 255, 255, 0.01) 100%
+    135deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.02) 70%,
+    transparent 100%
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -64,24 +59,110 @@
   z-index: 10;
 }
 
+/* Closed: slide off-screen, leaving only the tab visible */
+#panel[data-open='false'] {
+  --slide: calc(100% - 52px);
+}
+
 #panel[data-dragging='true'] {
   transition: none;
+}
+
+/* ---- Panel tab: drag handle + open/close CTA ---- */
+.panel-tab {
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: grab;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px 0;
+  transition: background 200ms ease;
+  position: relative;
+}
+
+.panel-tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 30%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+}
+
+.panel-tab:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.panel-tab:active {
   cursor: grabbing;
 }
 
-#panel[data-open='false'] {
-  --scale: 0;
-  --opacity: 0;
+/* Grip dots */
+.panel-tab-grip {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
   pointer-events: none;
 }
 
-/* ---- Header / drag handle ---- */
+.panel-tab-grip span {
+  display: block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.panel-tab-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.4;
+  color: #e8ecf3;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+  transition: opacity 200ms ease;
+}
+
+.panel-tab:hover .panel-tab-label {
+  opacity: 0.7;
+}
+
+/* ---- Panel content area ---- */
+.panel-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ---- Header ---- */
 #panel .drag-handle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 14px;
-  cursor: grab;
+  cursor: default;
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.10),
@@ -95,7 +176,6 @@
   position: relative;
 }
 
-/* Specular caustic — 1px light refraction band at the very top edge */
 #panel .drag-handle::after {
   content: '';
   position: absolute;
@@ -106,16 +186,11 @@
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.55) 35%,
-    rgba(255, 255, 255, 0.35) 55%,
+    rgba(255, 255, 255, 0.45) 40%,
+    rgba(255, 255, 255, 0.28) 70%,
     rgba(255, 255, 255, 0) 100%
   );
   pointer-events: none;
-  border-radius: 20px 20px 0 0;
-}
-
-#panel .drag-handle:active {
-  cursor: grabbing;
 }
 
 #panel .drag-handle .title {
@@ -361,54 +436,11 @@
   transform: translateX(14px);
 }
 
-/* ---- Toggle pill (shown when panel is closed) ---- */
-#panel-toggle {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 99;
-  background: rgba(15, 17, 23, 0.35);
-  color: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  padding: 10px 18px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-  transform: scale(var(--toggle-scale, 0));
-  opacity: var(--toggle-opacity, 0);
-  transition:
-    transform 480ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    opacity 320ms ease;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-#panel-toggle[data-visible='true'] {
-  --toggle-scale: 1;
-  --toggle-opacity: 1;
-  pointer-events: auto;
-}
-
-#panel-toggle:hover {
-  filter: brightness(1.1);
-}
-
 /* ---- Toast ---- */
 .toast {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  right: 72px;
   padding: 10px 14px;
   background: rgba(15, 17, 23, 0.95);
   color: #e8ecf3;
