@@ -11,12 +11,25 @@ interface PanelHandle {
 }
 
 export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): PanelHandle {
-  injectGooFilter();
-
   const root = document.createElement('div');
   root.id = 'panel';
   root.dataset.open = 'true';
-  root.classList.add('goo');
+
+  // Tab strip: visible on the right edge — drag to reposition, tap to open/close
+  const tab = document.createElement('div');
+  tab.className = 'panel-tab';
+  const tabGrip = document.createElement('div');
+  tabGrip.className = 'panel-tab-grip';
+  for (let i = 0; i < 3; i++) tabGrip.appendChild(document.createElement('span'));
+  const tabLabel = document.createElement('span');
+  tabLabel.className = 'panel-tab-label';
+  tabLabel.textContent = 'Controls';
+  tab.appendChild(tabGrip);
+  tab.appendChild(tabLabel);
+
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'panel-content';
 
   const header = document.createElement('header');
   header.className = 'drag-handle';
@@ -33,17 +46,11 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
   const body = document.createElement('div');
   body.className = 'body';
 
-  root.appendChild(header);
-  root.appendChild(body);
+  content.appendChild(header);
+  content.appendChild(body);
+  root.appendChild(tab);
+  root.appendChild(content);
   document.body.appendChild(root);
-
-  // Floating pill for reopening — also wrapped in goo for the liquid feel.
-  const toggle = document.createElement('button');
-  toggle.id = 'panel-toggle';
-  toggle.dataset.visible = 'false';
-  toggle.classList.add('goo');
-  toggle.textContent = 'Controls';
-  document.body.appendChild(toggle);
 
   // ---- Refresh wiring (re-renders body when conditional sections change) ----
   const refreshHooks: Array<() => void> = [];
