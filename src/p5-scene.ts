@@ -179,7 +179,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
   function retarget() {
     const s = currentState;
     const extent = Math.min(host.clientWidth, host.clientHeight);
-    const next = generate2D(s.shape, s.count, s.spread, s.seed, extent, s.text);
+    const next = generate2D(s.shape, s.count, s.spread, s.seed, extent, shapeText(s));
     if (next.length !== targets.length) {
       rebuild();
       return;
@@ -213,7 +213,7 @@ export function createP5Scene(host: HTMLElement, initial: ParticleState): Scene 
       currentState = { ...state, cursor: { ...state.cursor } };
       if (key === 'resetView') return;
       if (key === 'count' || key === 'seed') rebuild();
-      else if (key === 'shape' || key === 'spread' || key === 'text') retarget();
+      else if (key === 'shape' || key === 'spread' || key === 'text' || key === 'svgData') retarget();
       else if (
         key === 'palette' ||
         key === 'gradientMode' ||

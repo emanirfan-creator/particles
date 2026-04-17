@@ -58,6 +58,9 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
   // Reference holder for in-panel mutable inputs (e.g. spin slider for stop button).
   const motionRefs: { spin?: HTMLInputElement } = {};
 
+  // Shared ref so shapeDropdown can trigger the SVG file picker synchronously.
+  const svgPickRef: { trigger?: () => void } = {};
+
   // ---- Build sections ----
   body.appendChild(
     section('Scene', [
@@ -79,8 +82,9 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
           emit('mode');
         },
       }),
-      shapeDropdown(state, emit, refreshHooks),
+      shapeDropdown(state, emit, refreshHooks, svgPickRef),
       conditionalText(state, emit, refreshHooks),
+      conditionalSVGUpload(state, emit, refreshHooks, svgPickRef),
       slider({
         label: 'Particles',
         tooltip: 'How many particles are in the scene',
@@ -211,7 +215,27 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
           : []),
       ]),
       conditional2DMotion(state, emit, refreshHooks),
+      conditionalFlowField(state, emit, refreshHooks),
     ])
+  );
+
+  body.appendChild(
+    section(
+      'Connections',
+      [
+        toggleControl({
+          label: 'Network graph',
+          tooltip: 'Draw lines between nearby particles',
+          value: state.connections,
+          onChange: (v) => {
+            state.connections = v;
+            emit('connections');
+          },
+        }),
+        conditionalConnections(state, emit, refreshHooks),
+      ],
+      false
+    )
   );
 
   body.appendChild(
@@ -285,7 +309,8 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
 function shapeDropdown(
   state: ParticleState,
   emit: (k: keyof ParticleState) => void,
-  refreshHooks: Array<() => void>
+  refreshHooks: Array<() => void>,
+  svgPickRef: { trigger?: () => void }
 ): HTMLElement {
   const wrap = document.createElement('div');
   wrap.className = 'ctrl';
@@ -303,6 +328,7 @@ function shapeDropdown(
       onChange: (v) => {
         state.shape = v as ShapeId;
         emit('shape');
+        if (v === 'svg' && !state.svgData) svgPickRef.trigger?.();
       },
     });
     wrap.appendChild(dd);
@@ -430,6 +456,199 @@ function conditional2DMotion(
   return wrap;
 }
 
+function conditionalSVGUpload(
+  state: ParticleState,
+  emit: (k: keyof ParticleState) => void,
+  refreshHooks: Array<() => void>,
+  svgPickRef: { trigger?: () => void }
+): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'ctrl';
+
+  // Hoist the file input so it exists before the shape changes — this keeps it
+  // within the user-gesture chain when trigger() is called synchronously from onChange.
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.svg,image/svg+xml';
+  fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+
+  svgPickRef.trigger = () => fileInput.click();
+
+  let fileBtn: HTMLButtonElement | null = null;
+  let status: HTMLSpanElement | null = null;
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result;
+      if (typeof result === 'string') {
+        state.svgData = result;
+        if (fileBtn) fileBtn.textContent = 'Change SVG…';
+        if (status) status.textContent = file.name;
+        emit('svgData');
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  const render = () => {
+    wrap.innerHTML = '';
+    if (state.shape !== 'svg') {
+      wrap.dataset.hidden = 'true';
+      return;
+    }
+    wrap.dataset.hidden = 'false';
+
+    const lab = document.createElement('label');
+    lab.title = 'Upload an SVG file — particles will trace its paths';
+    lab.textContent = 'SVG file';
+
+    fileBtn = document.createElement('button');
+    fileBtn.className = 'action';
+    fileBtn.style.width = '100%';
+    fileBtn.style.marginTop = '4px';
+    fileBtn.textContent = state.svgData ? 'Change SVG…' : 'Upload SVG…';
+    fileBtn.addEventListener('click', () => fileInput.click());
+
+    status = document.createElement('span');
+    status.className = 'value';
+    status.style.display = 'block';
+    status.style.marginTop = '4px';
+    status.style.fontSize = '11px';
+    status.style.opacity = '0.6';
+    status.textContent = state.svgData ? 'SVG loaded' : 'No file loaded';
+
+    wrap.appendChild(lab);
+    wrap.appendChild(fileBtn);
+    wrap.appendChild(status);
+  };
+  render();
+  refreshHooks.push(render);
+  return wrap;
+}
+
+function conditionalFlowField(
+  state: ParticleState,
+  emit: (k: keyof ParticleState) => void,
+  refreshHooks: Array<() => void>
+): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  wrap.style.gap = '10px';
+  const render = () => {
+    wrap.innerHTML = '';
+    wrap.appendChild(
+      toggleControl({
+        label: 'Flow field',
+        tooltip: 'Particles drift along a Perlin noise vector field',
+        value: state.flowField,
+        onChange: (v) => {
+          state.flowField = v;
+          emit('flowField');
+        },
+      })
+    );
+    if (!state.flowField) return;
+    wrap.appendChild(
+      slider({
+        label: 'Noise scale',
+        tooltip: 'Spatial frequency of the noise field',
+        value: state.noiseScale,
+        min: 0.001,
+        max: 0.015,
+        step: 0.001,
+        format: (v) => v.toFixed(3),
+        onChange: (v) => {
+          state.noiseScale = v;
+          emit('noiseScale');
+        },
+      })
+    );
+    wrap.appendChild(
+      slider({
+        label: 'Time speed',
+        tooltip: 'How fast the noise field evolves',
+        value: state.noiseSpeed,
+        min: 0.001,
+        max: 0.02,
+        step: 0.001,
+        format: (v) => v.toFixed(3),
+        onChange: (v) => {
+          state.noiseSpeed = v;
+          emit('noiseSpeed');
+        },
+      })
+    );
+    wrap.appendChild(
+      slider({
+        label: 'Strength',
+        tooltip: 'How strongly the flow field pushes particles',
+        value: state.noiseStrength,
+        min: 0,
+        max: 5,
+        step: 0.1,
+        onChange: (v) => {
+          state.noiseStrength = v;
+          emit('noiseStrength');
+        },
+      })
+    );
+  };
+  render();
+  refreshHooks.push(render);
+  return wrap;
+}
+
+function conditionalConnections(
+  state: ParticleState,
+  emit: (k: keyof ParticleState) => void,
+  refreshHooks: Array<() => void>
+): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.flexDirection = 'column';
+  wrap.style.gap = '10px';
+  const render = () => {
+    wrap.innerHTML = '';
+    if (!state.connections) return;
+    wrap.appendChild(
+      slider({
+        label: 'Connect radius',
+        tooltip: 'Maximum distance between connected particles',
+        value: state.connectionRadius,
+        min: 10,
+        max: 300,
+        step: 1,
+        onChange: (v) => {
+          state.connectionRadius = v;
+          emit('connectionRadius');
+        },
+      })
+    );
+    wrap.appendChild(
+      slider({
+        label: 'Line opacity',
+        tooltip: 'Opacity of connection lines',
+        value: state.connectionOpacity,
+        min: 0.05,
+        max: 1,
+        step: 0.05,
+        onChange: (v) => {
+          state.connectionOpacity = v;
+          emit('connectionOpacity');
+        },
+      })
+    );
+  };
+  render();
+  refreshHooks.push(render);
+  return wrap;
+}
+
 /* -------------------- Control primitives -------------------- */
 
 function section(
@@ -489,6 +708,31 @@ function slider(o: SliderOpts): HTMLElement {
   wrap.appendChild(lab);
   wrap.appendChild(input);
   if (o.ref) o.ref(input);
+  return wrap;
+}
+
+interface ToggleOpts {
+  label: string;
+  tooltip?: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}
+
+function toggleControl(o: ToggleOpts): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'ctrl';
+  const lab = document.createElement('label');
+  lab.className = 'toggle-row';
+  if (o.tooltip) lab.title = o.tooltip;
+  const lt = document.createElement('span');
+  lt.textContent = o.label;
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = o.value;
+  input.addEventListener('change', () => o.onChange(input.checked));
+  lab.appendChild(lt);
+  lab.appendChild(input);
+  wrap.appendChild(lab);
   return wrap;
 }
 
@@ -707,7 +951,7 @@ function injectGooFilter() {
   const blur = document.createElementNS(svgNS, 'feGaussianBlur');
   blur.setAttribute('id', 'goo-blur');
   blur.setAttribute('in', 'SourceGraphic');
-  blur.setAttribute('stdDeviation', '4');
+  blur.setAttribute('stdDeviation', '0');
   blur.setAttribute('result', 'blur');
   const cm = document.createElementNS(svgNS, 'feColorMatrix');
   cm.setAttribute('in', 'blur');
@@ -744,6 +988,7 @@ function prettyShapeName(s: ShapeId): string {
     heart: 'Heart',
     kaleidoscope: 'Kaleidoscope',
     text: 'Text…',
+    svg: 'SVG Import…',
   };
   return map[s] || s;
 }
@@ -785,6 +1030,7 @@ function importAndApply(
         'spread',
         'shape',
         'text',
+        'svgData',
         'palette',
         'gradientMode',
         'colorA',
@@ -794,6 +1040,13 @@ function importAndApply(
         'mirror',
         'seed',
         'cursor',
+        'flowField',
+        'noiseScale',
+        'noiseSpeed',
+        'noiseStrength',
+        'connections',
+        'connectionRadius',
+        'connectionOpacity',
       ] as (keyof ParticleState)[]
     ).forEach((k) => {
       notifyChange(state, k);
