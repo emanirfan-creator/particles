@@ -301,12 +301,11 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
     )
   );
 
-  // ---- Drag behavior ----
-  setupDrag(root, header);
+  // ---- Drag behavior (vertical edge snap) + tap-to-toggle ----
+  setupDrag(root, tab);
 
   // ---- Open / close ----
-  close.addEventListener('click', () => setOpen(root, toggle, false));
-  toggle.addEventListener('click', () => setOpen(root, toggle, true));
+  close.addEventListener('click', () => setOpen(root, false));
 
   return { refresh };
 }
