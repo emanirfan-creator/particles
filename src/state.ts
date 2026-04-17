@@ -68,6 +68,8 @@ export type ParticleState = {
   connections: boolean;
   connectionRadius: number;
   connectionOpacity: number;
+  // Extra positional scatter around shape targets
+  scatter: number;
 };
 
 export const DEFAULT_STATE: ParticleState = {
