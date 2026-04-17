@@ -963,7 +963,7 @@ function prettyShapeName(s: ShapeId): string {
     heart: 'Heart',
     kaleidoscope: 'Kaleidoscope',
     text: 'Text…',
-    figure: 'Figure',
+    aurora: 'Aurora',
     svg: 'SVG Import…',
   };
   return map[s] || s;
