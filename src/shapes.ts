@@ -206,6 +206,17 @@ export function generate3D(
       break;
     }
   }
+
+  // Apply extra scatter: displace each particle by a gaussian amount proportional to R.
+  const scatterAmt = (opts.scatter ?? 0) * R;
+  if (scatterAmt > 0) {
+    for (let i = 0; i < count; i++) {
+      out[i * 3]     += gauss(rand) * scatterAmt;
+      out[i * 3 + 1] += gauss(rand) * scatterAmt;
+      out[i * 3 + 2] += gauss(rand) * scatterAmt;
+    }
+  }
+
   return out;
 }
 
