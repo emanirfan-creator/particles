@@ -128,16 +128,6 @@ export function buildPanel(state: ParticleState, onFieldChange: PanelEmit): Pane
           emit('spread');
         },
       }),
-      buttonRow([
-        {
-          label: '🔀  Variation',
-          tooltip: 'Generate a new random arrangement of the same shape',
-          onClick: () => {
-            state.seed = 1 + Math.floor(Math.random() * 9998);
-            emit('seed');
-          },
-        },
-      ]),
     ])
   );
 
