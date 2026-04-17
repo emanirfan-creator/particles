@@ -73,6 +73,42 @@ const MONO: RGB[] = [
   [200, 200, 210],
 ];
 
+// Deep navy → purple → magenta → electric blue → cyan
+const COSMIC: RGB[] = [
+  [8, 2, 60],
+  [76, 3, 168],
+  [180, 0, 140],
+  [0, 120, 255],
+  [0, 220, 255],
+];
+
+// Dark teal → green → cyan → mint → pale white
+const AURORA: RGB[] = [
+  [2, 20, 30],
+  [0, 100, 80],
+  [20, 200, 160],
+  [100, 240, 200],
+  [220, 255, 245],
+];
+
+// Deep red → crimson → orange → gold → cream
+const EMBER: RGB[] = [
+  [30, 5, 0],
+  [180, 20, 10],
+  [240, 90, 20],
+  [255, 180, 30],
+  [255, 245, 200],
+];
+
+// Dark navy → deep blue → ice blue → silver white
+const ICE: RGB[] = [
+  [2, 5, 30],
+  [10, 40, 120],
+  [30, 110, 220],
+  [140, 200, 255],
+  [230, 245, 255],
+];
+
 function lerpStops(t: number, stops: RGB[]): RGB {
   const n = stops.length - 1;
   const x = Math.min(Math.max(t, 0), 1) * n;
