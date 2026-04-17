@@ -307,7 +307,7 @@ export function generate2D(
     case 'helix':
     case 'galaxy':
     case 'cube': {
-      const flat3D = generate3D(shape as Shape3D, count, scale, seed);
+      const flat3D = generate3D(shape as Shape3D, count, scale, seed, '', opts);
       for (let i = 0; i < count; i++) {
         out[i * 2] = flat3D[i * 3];
         out[i * 2 + 1] = -flat3D[i * 3 + 1];
