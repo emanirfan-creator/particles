@@ -930,25 +930,35 @@ function savePanelPos(edge: Edge, pos: number) {
 }
 
 function setupDrag(panel: HTMLElement, tab: HTMLElement) {
-  const SNAP_ZONE = 64;
-
   const saved = loadPanelPos();
   applyEdge(panel, saved.edge, saved.pos);
+  panel.dataset.dragging = 'false';
 
   let dragging = false;
   let hasMoved = false;
   let startX = 0;
   let startY = 0;
-  let basePos = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  let panelW = 0;
+  let panelH = 0;
   let currentEdge: Edge = saved.edge;
 
   tab.addEventListener('pointerdown', (e) => {
+    const rect = panel.getBoundingClientRect();
     dragging = true;
     hasMoved = false;
     startX = e.clientX;
     startY = e.clientY;
-    basePos = parseFloat(panel.style.getPropertyValue('--panel-pos')) || 80;
+    startLeft = rect.left;
+    startTop = rect.top;
+    panelW = rect.width;
+    panelH = rect.height;
+
+    panel.style.setProperty('--drag-left', `${startLeft}px`);
+    panel.style.setProperty('--drag-top', `${startTop}px`);
     panel.dataset.dragging = 'true';
+
     tab.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
@@ -957,50 +967,102 @@ function setupDrag(panel: HTMLElement, tab: HTMLElement) {
     if (!dragging) return;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
+    if (!hasMoved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) hasMoved = true;
+    if (!hasMoved) return;
 
     const W = window.innerWidth;
     const H = window.innerHeight;
+    const TAB = 52;
 
-    // Detect snap to a new edge based on pointer proximity to viewport edges
-    let newEdge: Edge = currentEdge;
-    if (e.clientX < SNAP_ZONE) newEdge = 'left';
-    else if (e.clientX > W - SNAP_ZONE) newEdge = 'right';
-    else if (e.clientY < SNAP_ZONE) newEdge = 'top';
-    else if (e.clientY > H - SNAP_ZONE) newEdge = 'bottom';
+    // Free movement — clamp so at least the tab handle stays in viewport
+    const newLeft = Math.max(TAB - panelW, Math.min(W - TAB, startLeft + dx));
+    const newTop  = Math.max(TAB - panelH, Math.min(H - TAB, startTop  + dy));
 
-    if (newEdge !== currentEdge) {
-      currentEdge = newEdge;
-      const newPos = isVerticalEdge(currentEdge) ? e.clientY : e.clientX;
-      basePos = newPos;
-      startX = e.clientX;
-      startY = e.clientY;
-      applyEdge(panel, currentEdge, clampPos(panel, currentEdge, newPos));
-      return;
-    }
-
-    // Slide along current edge
-    const delta = isVerticalEdge(currentEdge) ? dy : dx;
-    const newPos = clampPos(panel, currentEdge, basePos + delta);
-    panel.style.setProperty('--panel-pos', `${newPos}px`);
+    panel.style.setProperty('--drag-left', `${newLeft}px`);
+    panel.style.setProperty('--drag-top',  `${newTop}px`);
   });
 
   tab.addEventListener('pointerup', (e) => {
     if (!dragging) return;
     dragging = false;
-    panel.dataset.dragging = 'false';
     tab.releasePointerCapture(e.pointerId);
 
     if (!hasMoved) {
+      panel.dataset.dragging = 'false';
       const isOpen = panel.dataset.open !== 'false';
       setOpen(panel, !isOpen);
+      return;
     }
 
-    const pos = parseFloat(panel.style.getPropertyValue('--panel-pos')) || 80;
-    savePanelPos(currentEdge, pos);
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    const curLeft = parseFloat(panel.style.getPropertyValue('--drag-left')) || startLeft;
+    const curTop  = parseFloat(panel.style.getPropertyValue('--drag-top'))  || startTop;
+
+    // Snap to whichever edge the pointer is closest to
+    const dLeft   = e.clientX;
+    const dRight  = W - e.clientX;
+    const dTop    = e.clientY;
+    const dBottom = H - e.clientY;
+    const minDist = Math.min(dLeft, dRight, dTop, dBottom);
+
+    let newEdge: Edge;
+    let newPos: number;
+
+    if (minDist === dRight) {
+      newEdge = 'right';
+      newPos  = clampPos(panel, 'right', curTop);
+    } else if (minDist === dLeft) {
+      newEdge = 'left';
+      newPos  = clampPos(panel, 'left', curTop);
+    } else if (minDist === dTop) {
+      newEdge = 'top';
+      newPos  = clampPos(panel, 'top', curLeft);
+    } else {
+      newEdge = 'bottom';
+      newPos  = clampPos(panel, 'bottom', curLeft);
+    }
+
+    // Where the panel will sit once edge-anchored
+    const finalLeft = newEdge === 'right'  ? W - panelW :
+                      newEdge === 'left'   ? 0          : newPos;
+    const finalTop  = newEdge === 'top'    ? 0          :
+                      newEdge === 'bottom' ? H - panelH : newPos;
+
+    // Offset transform so the panel visually stays at current drag position
+    // when we switch to edge-anchored layout — then animate to zero offset.
+    const snapDx = curLeft - finalLeft;
+    const snapDy = curTop  - finalTop;
+
+    currentEdge = newEdge;
+    panel.dataset.edge = newEdge;
+    panel.dataset.open = 'true';
+    panel.style.setProperty('--panel-pos', `${newPos}px`);
+    panel.style.transition = 'none';
+    panel.style.transform   = `translate(${snapDx}px, ${snapDy}px)`;
+    panel.dataset.dragging  = 'false';
+
+    // Next paint: slide to snapped position
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        panel.style.transition = 'transform 280ms cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        panel.style.transform  = '';
+
+        const cleanup = (ev: TransitionEvent) => {
+          if (ev.propertyName === 'transform') {
+            panel.style.transition = '';
+            panel.removeEventListener('transitionend', cleanup);
+          }
+        };
+        panel.addEventListener('transitionend', cleanup);
+      });
+    });
+
+    savePanelPos(newEdge, newPos);
   });
 
-  // Re-clamp position when viewport resizes so panel can't get stuck off-screen.
+  // Re-clamp when viewport resizes so panel can't get stuck off-screen.
   window.addEventListener('resize', () => {
     const pos = parseFloat(panel.style.getPropertyValue('--panel-pos')) || 80;
     panel.style.setProperty('--panel-pos', `${clampPos(panel, currentEdge, pos)}px`);
