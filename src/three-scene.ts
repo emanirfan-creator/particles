@@ -257,9 +257,13 @@ export function createThreeScene(
     return state.shape === 'svg' ? state.svgData : state.text;
   }
 
+  function shapeOpts(state: ParticleState): ShapeOpts {
+    return { galaxyArms: state.galaxyArms, galaxySpiral: state.galaxySpiral };
+  }
+
   function rebuild(state: ParticleState) {
     currentState = { ...state, cursor: { ...state.cursor } };
-    const nextTargets = generate3D(state.shape, state.count, state.spread, state.seed, shapeText(state));
+    const nextTargets = generate3D(state.shape, state.count, state.spread, state.seed, shapeText(state), shapeOpts(state));
     targets = new Float32Array(nextTargets.length);
     targets.set(nextTargets);
     positions = new Float32Array(targets.length);
