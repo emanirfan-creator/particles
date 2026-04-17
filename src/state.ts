@@ -98,6 +98,7 @@ export const DEFAULT_STATE: ParticleState = {
   connections: false,
   connectionRadius: 80,
   connectionOpacity: 0.3,
+  scatter: 0,
 };
 
 const LISTENERS = new Set<(s: ParticleState, key: keyof ParticleState) => void>();
