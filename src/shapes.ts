@@ -551,10 +551,10 @@ export const SHAPES_3D: Shape3D[] = [
   'torus',
   'helix',
   'galaxy',
+  'aurora',
   'wave',
   'grid',
   'cloud',
-  'figure',
   'text',
   'svg',
 ];
